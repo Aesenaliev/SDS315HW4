@@ -1,0 +1,367 @@
+---
+title: "Homework04"
+author: "Arthur Esenaliev"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+Arthur Esenaliev 
+are2376 
+[https://github.com/Aesenaliev/SDS315HW4](https://github.com/Aesenaliev/SDS315HW4) 
+
+```{r setup, include=FALSE, message=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(tidyverse)
+library(mosaic)
+library(kableExtra)
+options(scipen = 999)
+```
+
+
+## Problem 1
+
+```{r echo = FALSE}
+gasprices <- read.csv("gasprices.csv")
+```
+
+
+```{r echo = FALSE, include = FALSE}
+mean(Price ~ Competitors, data = gasprices)
+diffmean(Price ~ Competitors, data = gasprices)
+boot_comp = do(10000) * diffmean(Price ~ Competitors, data = mosaic::resample(gasprices))
+ci_comp = confint(boot_comp, level = 0.95)
+
+```
+
+Claim: Gas stations charge more if they lack direct competition in sight
+
+<br>
+
+Evidence: From the actual data, the difference in price between gas stations with and without competition is `r round(diffmean(Price ~ Competitors, data = gasprices),2)`. What that number means is that gas stations without competition, on average, have a price of 2 cents greater. Using bootstrapping, the difference in the price between gas stations with and without competition is somewhere between `r round(ci_comp$lower, 2)` to `r round(ci_comp$upper, 2)` dollars, with 95% confidence. 
+
+`r kbl(ci_comp)`
+
+```{r echo = FALSE, include = FALSE}
+ggplot(gasprices) +
+  geom_histogram(aes(x = Price), bins = 10) + facet_wrap(~Competitors) +
+  xlab("Price of Unleaded Gasoline") +
+  labs(title = "Price of Gas between Gas Stations w/wo Compeition")
+
+ggplot(boot_comp) + 
+  geom_histogram(aes(x = diffmean), bins = 30) +
+  xlab("Difference in Mean Price") +
+  labs(title = "Bootstrapped Sampling Distribution for price Differences Between Gas Stations w/wo Competition")
+
+```
+
+<br>
+
+Conclusion: The theory is unsupported by the data, as this is statistically insignificant. The confidence interval contains zero. Practically speaking, the theory also isn't supported, because a couple of cents difference for gas has hardly a big effect. Unsupported
+
+\newpage
+
+Claim: The richer the area, the higher the gas prices.
+```{r echo = FALSE, include = FALSE}
+lm_income = lm(Price ~ Income, data = gasprices)
+coef_income = coef(lm_income)
+boot_income <- do(10000)*(coef(lm(Price ~ Income, data = mosaic::resample(gasprices)))[2])
+ci_income = confint(boot_income, level = .95)
+
+```
+<br>
+Evidence: From the sample, for every 1 dollar change in income, the gas prices change `r coef_income[2]`. In more practical terms, for every 10,000 dollar change in income, the gas prices change `r round((coef_income[2] * 10000),2)` dollars, or 1 cent. Then, using bootstrapping, with 95% confidence, we can say that the gas price difference per 1 dollar income change is between `r ci_income$lower` to `r ci_income$upper` dollars. Putting that to more readable terms says that for every 10,000 dollar change in income, there is gas price difference between `r ci_income$lower * 10000` to `r ci_income$upper * 10000` dollars. There is an association, but its relatively small.
+
+`r kbl(ci_income)`
+```{r echo = FALSE, message = FALSE}
+ggplot(gasprices) +
+  geom_point(aes(x = Income, y = Price )) +
+  geom_smooth(aes(x = Income, y = Price), method = "lm") +
+  labs(title = "Income vs Gas Price")
+```
+```{r echo = FALSE, message = FALSE, include = FALSE}
+ggplot(boot_income) + 
+  geom_histogram(aes(x = Income), bins = 30) +
+  xlab("Difference in Mean Price") +
+  labs(title = "Price Differences Between Gas Stations based on Income (Bootstrapped)")
+
+```
+
+<br>
+Conclusion: As you can see from the linear model graph, there is some positive correlation between income and price of gas. For every 10,000 dollar change in income there is only between a `r ci_income$lower * 10000` to `r ci_income$upper * 10000` dollars change in gas prices, with 95% confidence. Practically speaking, this is useless, because a 1 cent difference is basically obsolete. The theory, however, is statistically significant, since the confidence interval does not contain zero. It is statistically significant, since the confidence interval does not contain zero, but its not practically significant. Supported, but very small
+
+\newpage
+
+Claim: Gas stations at stoplights charge more.
+```{r echo = FALSE, include = FALSE}
+mean(Price ~ Stoplight, data = gasprices)
+diffmean(Price ~ Stoplight, data = gasprices)
+boot_stop = do(10000) * diffmean(Price ~ Stoplight, data = mosaic::resample(gasprices))
+ci_stop = confint(boot_stop, level = 0.95)
+
+```
+<br>
+Evidence: From the actual data, the difference in price between gas stations with and without stoplight is `r round(diffmean(Price ~ Stoplight, data = gasprices),3)`. This is not even a one cent difference in price. Okay, what that number means is that gas stations with stoplight, on average, have a price of .3 cents lower. Using bootstrapping, the difference in the price between gas stations with and without stoplights is somewhere between `r round(ci_stop$lower, 2)` to `r round(ci_stop$upper, 2)` dollars, with 95% confidence. 
+
+`r kbl(ci_stop)`
+
+```{r echo = FALSE, include = FALSE}
+ggplot(gasprices) +
+  geom_histogram(aes(x = Price), bins = 10) + facet_wrap(~Stoplight) +
+  xlab("Price of Unleaded Gasoline") +
+  labs(title = "Price of Gas between Gas Stations w/wo Stoplight")
+
+ggplot(boot_stop) + 
+  geom_histogram(aes(x = diffmean), bins = 30) +
+  xlab("Difference in Mean Price") +
+  labs(title = "Bootstrapped Sampling Distribution for price Differences Between Gas Stations w/wo Stoplight")
+
+```
+<br>
+Conclusion: As you can see from the first histogram graph, the prices for gas between stoplight or not isn't vastly different, with with the mean price difference being `r round(diffmean(Price ~ Stoplight, data = gasprices),3)`. Using bootstrapping, the difference in the price between gas stations with and without stoplights is somewhere between `r round(ci_stop$lower, 2)` to `r round(ci_stop$upper, 2)` dollars, with 95% confidence. Because that confidence interval contains zero, the data is statistically insignificant. Practically speaking, its also insignificant, because the price difference isn't even a cent. Unsupported
+
+\newpage
+
+Claim: Gas stations with direct highway access charge more.
+
+```{r echo = FALSE, include = FALSE}
+mean(Price ~ Highway, data = gasprices)
+diffmean(Price ~ Highway, data = gasprices)
+boot_highway = do(10000) * diffmean(Price ~ Highway, data = mosaic::resample(gasprices))
+ci_highway = confint(boot_highway, level = 0.95)
+```
+<br>
+Evidence: From the actual data, the difference in price between gas stations with and without direct highway access is `r round(diffmean(Price ~ Highway, data = gasprices),2)` dollars. This is a 5 cent difference price, which is sort of important to see. Using bootstrapping, the difference in the price between gas stations with and without direct highway access is somewhere between `r round(ci_highway$lower, 2)` to `r round(ci_highway$upper, 2)` dollars, with 95% confidence.
+
+
+`r kbl(ci_highway)`
+
+```{r echo = FALSE, include = FALSE}
+ggplot(gasprices) +
+  geom_histogram(aes(x = Price), bins = 10) + facet_wrap(~Highway) +
+  xlab("Price of Unleaded Gasoline") +
+  labs(title = "Price of Gas between Gas Stations w/wo Direct Highway Access")
+
+ggplot(boot_highway) + 
+  geom_histogram(aes(x = diffmean), bins = 30) +
+  xlab("Difference in Mean Price") +
+  labs(title = "Bootstrapped Sampling Distribution for price Differences Between Gas Stations w/wo Direct Highway Access")
+
+```
+
+<br>
+
+Conclusion: As you can see from the first histogram graph, the prices for gas between direct highway access is pretty different, with with the mean price difference being `r round(diffmean(Price ~ Highway, data = gasprices),2)`. Using bootstrapping, the difference in the price between gas stations with and without stoplights is somewhere between `r round(ci_highway$lower, 2)` to `r round(ci_highway$upper, 2)` dollars, with 95% confidence. Because that confidence interval does not contains zero, the data is statistically significant. Practically speaking, its I would say it is significant, because the price difference is could range from 1 cent to 8 cents, and 8 cents per gallon could add up after filling up your whole tank. There also isn't that many direct highway access gas stations sampled in the original dataset, so that may have skewed with the results. Theory is supported.
+
+\newpage
+
+Claim: Shell charges more than all other non-Shell brands.
+
+```{r echo = FALSE, include = FALSE}
+gasprices = gasprices %>%
+  mutate(is_shell = ifelse(Brand == "Shell", yes=TRUE, no=FALSE))
+mean(Price ~ is_shell, data = gasprices)
+boot_shell = do(10000) * diffmean(Price ~ is_shell, data = mosaic::resample(gasprices))
+ci_shell = confint(boot_shell, level = 0.95)
+```
+<br>
+Evidence: The method I used to approximate the randomness in the data generating process is bootstrapping and the diffmean functions. Using bootstrapping, the difference in the price between gas stations that are/aren't shell is somewhere between `r round(ci_shell$lower, 2)` to `r round(ci_shell$upper, 2)` dollars, with 95% confidence. 
+
+
+`r kbl(ci_shell)`
+
+```{r echo = FALSE, include = FALSE}
+ggplot(gasprices) +
+  geom_histogram(aes(x = Price), bins = 10) + facet_wrap(~is_shell) +
+  xlab("Price of Unleaded Gasoline") +
+  labs(title = "Price of Gas between Gas Stations that aren't/are Shell brand")
+
+ggplot(boot_shell) + 
+  geom_histogram(aes(x = diffmean), bins = 30) +
+  xlab("Difference in Mean Price") +
+  labs(title = "Bootstrapped Sampling Distribution for price Differences Between Gas Stations that aren't/are Shell brand")
+
+```
+<br>
+Conclusion: From the actual data, the mean price for gas stations that are not shell is `r round(mean(Price ~ is_shell, data = gasprices)[1],2)`and for shell is `r round(mean(Price ~ is_shell, data = gasprices)[2],2)`. That is a 3 cent difference. Using bootstrapping, the difference in the price between gas stations that are/aren't shell is somewhere between `r round(ci_shell$lower, 2)` to `r round(ci_shell$upper, 2)` dollars, with 95% confidence. Because that confidence interval does contains zero, the data is statistically insignificant. Practically speaking, its I would say it is significant, because the price difference is could range from -1 cent to 7 cents, and 7 cents per gallon could add up after filling up your whole tank. Also, there are less shell gas stations measured. Unsupported
+
+
+\newpage
+## Problem 2
+
+
+### Part A
+```{r echo = FALSE, message = FALSE}
+sclass <- read.csv("sclass.csv")
+
+sclass1 <- sclass %>%
+  filter(year == 2011 & trim == "63 AMG")
+
+boot_mileage <- do(10000) * mean(~mileage, data = mosaic::resample(sclass1))
+
+ggplot(boot_mileage) +
+  geom_histogram(aes(x = mean)) +
+  labs(title = "Average Miles on 2011 S-Class 63 AMGs")
+```
+```{r echo = FALSE, include = FALSE}
+
+mileage_ci <- confint(boot_mileage, level = 0.95)
+
+```
+
+The histogram and its associated confidence interval tells us that we can be 95% confident that based on this sample that the population (all 2011 S-Class 63 AMGs hitting the used market) average mileage is between `r round(mileage_ci$lower)` and `r round(mileage_ci$upper)` miles (rounded to the nearest mile). 
+
+`r kbl(mileage_ci)`
+
+\newpage 
+
+### Part B
+
+```{r echo = FALSE, message = FALSE}
+
+sclass2 <- sclass %>%
+  filter(year == 2014 & trim == "550") %>%
+  mutate(isBlack = ifelse(color == "Black", yes = TRUE, no = FALSE))
+
+boot_black = do(10000) * prop(~isBlack, data = mosaic::resample(sclass2))
+
+ggplot(boot_black) +
+  geom_histogram(aes(x = prop_TRUE)) +
+  labs(title = "Proportion of 2014 S-Class 550s Being Painted Black")
+```
+```{r, echo = FALSE, include = FALSE}
+black_ci = confint(boot_black, level = 0.95)
+```
+
+The histogram and its associated confidence interval tells us that we can be 95% confident that the true population (all 2014 S-Class 550s) proportion of being painted black is somewhere between `r round(black_ci$lower * 100, 2)` and `r round(black_ci$upper * 100, 2)` percent. 
+
+`r kbl(black_ci)`
+
+\newpage
+
+## Problem 3
+```{r echo = FALSE}
+nbc <- read.csv("nbc_pilotsurvey.csv")
+```
+
+### Part A
+```{r echo = FALSE, include = FALSE}
+nbc_A <- nbc %>%
+  filter(Show == "Living with Ed" | Show == "My Name is Earl")
+
+
+mean(Q1_Happy ~ Show, data = nbc_A)
+diffmean(Q1_Happy ~ Show, data = nbc_A)
+boot_happy = do(10000) * diffmean(Q1_Happy ~ Show, data = mosaic::resample(nbc_A))
+ci_happy = confint(boot_happy, level = 0.95)
+
+ci_happy
+
+```
+
+Question: Is there evidence that one show ("Living with Ed" or "My Name is Earl") consistently produces a higher mean Q1_Happy response among viewers? 
+
+<br>
+
+Approach: To answer this question, I used the filter, diffmean, bootstrapping, and the confint function.
+
+<br>
+
+Results: The actual data had a difference in mean score of `r diffmean(Q1_Happy ~ Show, data = nbc_A)`. The evidence my approach found to answer the question was a confidence interval of `r ci_happy$lower` - `r ci_happy$upper`. 
+
+`r kbl(ci_happy)`
+<br>
+
+Conclusion: The difference in happy response among viewers between the two showers is somewhere between `r ci_happy$lower` - `r ci_happy$upper`, with 95% confidence. This is not statistically significant, and not practically significant, because there isn't a sizable difference. 
+
+<br>
+
+### Part B
+
+```{r echo = FALSE, include = FALSE}
+nbc_B <- nbc %>%
+  filter(Show == "The Biggest Loser" | Show == "The Apprentice: Los Angeles")
+
+
+mean(Q1_Annoyed ~ Show, data = nbc_B)
+diffmean(Q1_Annoyed ~ Show, data = nbc_B)
+boot_annoyed = do(10000) * diffmean(Q1_Annoyed ~ Show, data = mosaic::resample(nbc_B))
+ci_annoyed = confint(boot_annoyed, level = 0.95)
+ci_annoyed
+```
+
+Question: Is there evidence that one show ("The Biggest Loser" or "The Apprentice: Los Angeles") consistently produces a higher mean Q1_Annoyed response among viewers?
+
+<br>
+
+Approach: To answer this question, I used the filter, diffmean, bootstrapping, and the confint function.
+
+<br>
+
+Results: The actual data had a difference in mean score of `r diffmean(Q1_Annoyed ~ Show, data = nbc_B)`. The evidence my approach found to answer the question was a confidence interval of `r ci_annoyed$lower` - `r ci_annoyed$upper`. 
+
+`r kbl(ci_annoyed)`
+
+<br>
+
+Conclusion: The difference in annoyed response among viewers between the two showers is somewhere between `r abs(ci_annoyed$upper)` - `r abs(ci_annoyed$lower)`, with 95% confidence. This is statistically significant, and sorta practically significant, because the upper interval is half a point, depending on how important that actually is. So the apprentice has an higher average annoyed score than the biggest loser. Also, based on the randomness of bootstrapping, sometimes the confidence interval changes statistical significance.
+<br>
+
+### Part C
+
+```{r echo = FALSE, include = FALSE}
+
+nbc_C <- nbc %>%
+  filter(Show == "Dancing with the Stars") %>%
+  mutate(score_4andabove = ifelse(Q2_Confusing >= 4, yes = TRUE, no = FALSE))
+
+prop(~score_4andabove, data = nbc_C)
+boot_confusing = do(10000) * prop(~score_4andabove, data = mosaic::resample(nbc_C))
+ci_confusing = confint(boot_confusing, level = 0.95)
+ci_confusing
+```
+
+Question: Based on this sample of respondents, what proportion of American TV watchers would we expect to give a response of 4 or greater to the "Q2_Confusing" question? 
+
+<br>
+
+Approach: To answer this question, I used the filter, mutate, prop, bootstrapping, and the confint function.
+
+<br>
+
+Results: The actual proportion of a score 4 and above was `r prop(~score_4andabove, data = nbc_C) * 100`%.  The evidence my approach found to answer the question was a confidence interval of `r ci_confusing$lower` - `r ci_confusing$upper`.
+
+`r kbl(ci_confusing)`
+
+<br>
+
+Conclusion: The difference in proportion of 4 of greater scores to the confusing question is somewhere between `r ci_confusing$lower` - `r ci_confusing$upper`, with 95% confidence. This is statistically significant, and not practically significant, because there isn't a sizable difference. Also, based on the randomness of bootstrapping, sometimes the confidence interval changes statistical significancy. 
+
+<br>
+
+\newpage
+## Problem 4
+
+
+```{r echo = FALSE, include = FALSE}
+
+ebay <- read.csv("ebay.csv")
+mean(rev_ratio ~ adwords_pause, data = ebay)
+boot_ratio = do(10000) * diffmean(rev_ratio ~ adwords_pause, data = mosaic::resample(ebay))
+ci_ratio = confint(boot_ratio, level = 0.95)
+ci_ratio
+
+
+```
+Question: Does paid search advertising on Google increase extra revenue for Ebay?
+<br>
+Approach: The statistical tool I used answer the question was with bootstrapping sampling, with the R function of diffmean and confint. 
+<br>
+Results: The evidence my approach provided to answer was a confidence interval table, shown here:
+`r kbl(ci_ratio)`
+<br>
+Conclusion: Based on the data, and bootstrapping, we can say with 95% confidence that the control group, or the group where Google Adworks continued as before, had a greater difference in revenue ratio, somewhere between `r abs(round(ci_ratio$upper,3))`- `r abs(round(ci_ratio$lower,3))`. This can favor the idea that paid search advertising on Google creates extra revenue for E Bay. 
+
+
